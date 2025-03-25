@@ -6,8 +6,7 @@ class Create(e.Element):
         super().__init__(delay)
 
     def out_act(self):
-
         super().out_act()
         
-        self.t_next[0] = self.t_curr + self.get_delay()
+        self.next_event_times[0] = self.current_time + self.get_delay()
         self.next_element[0].in_act()

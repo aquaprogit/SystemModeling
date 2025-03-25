@@ -3,40 +3,37 @@ import numpy as np
 from element import Element
 from process import Process
 
-
 class Model:
-    def __init__(self, elements: list):
+    def __init__(self, elements: list[Element]):
         self.elements_list = elements
         self.event = 0
-        self.t_next = 0.0
-        self.t_curr = self.t_next
+        self.next_event_time = 0.0
+        self.current_time = self.next_event_time
 
-    # здійснення імітації на інтервалі часу time
-    def simulate(self, time):
-        while self.t_curr < time:
-            # встановити t_next на max value of float
-            self.t_next = float('inf')
+    def simulate(self, modeling_time):
+        while self.current_time <= modeling_time:
+            self.next_event_time = float('inf')
 
-            for e in self.elements_list:
-                t_next_val = np.min(e.t_next)
-                if t_next_val < self.t_next:
-                    self.t_next = t_next_val
-                    self.event = e.id_el
+            for elem in self.elements_list:
+                closest_time = np.min(elem.next_event_times)
+                if closest_time < self.next_event_time:
+                    self.next_event_time = closest_time
+                    self.event = elem.id
 
-            for e in self.elements_list:
-                e.calculate(self.t_next - self.t_curr)
+            for elem in self.elements_list:
+                elem.calculate(self.next_event_time - self.current_time)
 
-            self.t_curr = self.t_next
+            self.current_time = self.next_event_time
 
-            for e in self.elements_list:
-                e.t_curr = self.t_curr
+            for elem in self.elements_list:
+                elem.current_time = self.current_time
 
             if len(self.elements_list) > self.event:
                 self.elements_list[self.event].out_act()
 
-            for e in self.elements_list:
-                if self.t_curr in e.t_next:
-                    e.out_act()
+            for elem in self.elements_list:
+                if self.current_time in elem.next_event_times:
+                    elem.out_act()
 
             self.print_info()
 
@@ -55,23 +52,22 @@ class Model:
         global_mean_load_accumulator = 0
         num_of_processors = 0
 
-        for e in self.elements_list:
-            e.result()
-            if isinstance(e, Process):
+        for elem in self.elements_list:
+            elem.result()
+            if isinstance(elem, Process):
                 num_of_processors += 1
-                mean_queue_length = e.mean_queue / self.t_curr
+                mean_queue_length = elem.mean_queue / self.current_time
 
-                failure_probability = e.failure / (e.quantity + e.failure) if (e.quantity + e.failure) != 0 else 0
+                failure_probability = elem.failure_count / (elem.quantity + elem.failure_count) if (elem.quantity + elem.failure_count) != 0 else 0
 
-                # розрахунок середнього завантаження пристрою
-                mean_load = e.mean_load / self.t_curr
+                mean_load = elem.mean_load / self.current_time
 
                 global_mean_queue_length_accumulator += mean_queue_length
                 global_failure_probability_accumulator += failure_probability
                 global_mean_load_accumulator += mean_load
 
-                if e.max_observed_queue > global_max_observed_queue_length:
-                    global_max_observed_queue_length = e.max_observed_queue
+                if elem.max_observed_queue > global_max_observed_queue_length:
+                    global_max_observed_queue_length = elem.max_observed_queue
 
                 print(f"Average queue length: {mean_queue_length}")
                 print(f"Failure probability: {failure_probability}")
