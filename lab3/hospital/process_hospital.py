@@ -26,7 +26,7 @@ class ProcessHospital(ElementHospital):
         self.type2_cnt_new = 0
 
     def in_act(self, next_type_element, t_start):
-        self.next_type_element = next_type_element
+        self.current_type = next_type_element
 
         if self.name == 'FOLLOWING_TO_THE_LAB_RECEPTION':
             self.delta_t_following_to_the_lab_reception += self.t_curr - self.tprev_following_to_the_lab_reception
@@ -41,13 +41,13 @@ class ProcessHospital(ElementHospital):
             self.state[i] = 1
 
             self.t_next[i] = self.t_curr + super().get_delay()
-            self.types[i] = self.next_type_element
+            self.types[i] = self.current_type
             self.t_starts[i] = t_start
             break
         else:
             if self.queue < self.max_queue:
                 self.queue += 1
-                self.queue_types.append(self.next_type_element)
+                self.queue_types.append(self.current_type)
                 self.t_starts_queue.append(t_start)
                 if self.queue > self.max_observed_queue:
                     self.max_obs_queue_length = self.queue
@@ -62,7 +62,7 @@ class ProcessHospital(ElementHospital):
         for i in current_channels:
             self.t_next[i] = np.inf
             self.state[i] = 0
-            prev_next_type_element = self.types[i]
+            prev_type = self.types[i]
             prev_t_start = self.t_starts[i]
             self.types[i] = -1
             self.t_starts[i] = -1
@@ -70,33 +70,33 @@ class ProcessHospital(ElementHospital):
             if self.queue > 0:
                 self.queue -= 1
                 prior_index = self.get_prior_index_from_queue()
-                self.next_type_element = self.queue_types.pop(prior_index)
+                self.current_type = self.queue_types.pop(prior_index)
 
                 self.state[i] = 1
                 self.t_next[i] = self.t_curr + super().get_delay()
-                self.types[i] = self.next_type_element
+                self.types[i] = self.current_type
                 self.t_starts[i] = self.t_starts_queue.pop(prior_index)
             if self.next_element is not None:
-                self.next_type_element = 1 if self.name == 'FOLLOWING_TO_THE_RECEPTION' else prev_next_type_element
+                self.current_type = 1 if self.name == 'FOLLOWING_TO_THE_RECEPTION' else prev_type
 
                 #                 print('next_type_element:', self.next_type_element)
                 if self.required_path is None:
                     #                     print('in if req path')
                     next_element = np.random.choice(self.next_element, p=self.probability)
-                    next_element.in_act(self.next_type_element, prev_t_start)
+                    next_element.in_act(self.current_type, prev_t_start)
                 else:
                     for idx, path in enumerate(self.required_path):
                         #                         print('Path:', path)
-                        if self.next_type_element in path:
+                        if self.current_type in path:
                             next_element = self.next_element[idx]
                             #                             print(f'\n\nWe have type {self.next_type_element} and go to the {next_element.name}\n\n')
-                            next_element.in_act(self.next_type_element, prev_t_start)
+                            next_element.in_act(self.current_type, prev_t_start)
                             break
 
     def get_prior_index_from_queue(self):
-        for prior_types_i in self.prior_types:
+        for prior in self.prior_types:
             for type_i in np.unique(self.queue_types):
-                if type_i == prior_types_i:
+                if type_i == prior:
                     return self.queue_types.index(type_i)
         else:
             return 0

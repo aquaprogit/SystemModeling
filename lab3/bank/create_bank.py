@@ -12,11 +12,8 @@ class CreateBank(e.Element):
 
         p1 = self.next_element[0]
         p2 = self.next_element[1]
-        if p1.queue == p2.queue:
-            p1.in_act()
-        elif p1.queue == 0 and p2.queue == 0:
-            p1.in_act()
-        elif p1.queue < p2.queue:
+
+        if p1.queue <= p2.queue:
             p1.in_act()
         else:
             p2.in_act()

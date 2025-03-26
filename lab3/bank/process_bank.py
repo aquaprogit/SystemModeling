@@ -39,7 +39,7 @@ class ProcessBank(e.Element):
             self.tprev_departure = self.t_curr
 
             # обраховуємо середній час перебування клієнта в банку
-            self.delta_t_in_bank = + self.t_curr - self.tprev_in_bank
+            self.delta_t_in_bank += self.t_curr - self.tprev_in_bank
 
             if self.queue > 0:
                 self.queue -= 1

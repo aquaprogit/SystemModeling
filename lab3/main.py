@@ -95,35 +95,37 @@ def bank_model():
 def hospital_model():
     print('Hospital model')
     c1 = CreateHospital(delay_mean=15.0, name='CREATOR_1', distribution='exp')
-    p1 = ProcessHospital(max_queue=100, n_channel=2, name='RECEPTION', distribution='exp')
-    p2 = ProcessHospital(max_queue=100, delay_mean=3.0, delay_dev=8, n_channel=3, name='FOLLOWING_TO_THE_WARD',
-                         distribution='unif')
-    p3 = ProcessHospital(max_queue=0, delay_mean=2.0, delay_dev=5, n_channel=10, name='FOLLOWING_TO_THE_LAB_RECEPTION',
-                         distribution='unif')
-    p4 = ProcessHospital(max_queue=100, delay_mean=4.5, delay_dev=3, n_channel=1, name='LAB_REGISTRY',
-                         distribution='erlang')
-    p5 = ProcessHospital(max_queue=100, delay_mean=4.0, delay_dev=2, n_channel=2, name='EXAMINATION',
-                         distribution='erlang')
-    p6 = ProcessHospital(max_queue=0, delay_mean=2.0, delay_dev=5, n_channel=10, name='FOLLOWING_TO_THE_RECEPTION',
-                         distribution='unif')
 
-    d1 = DisposeHospital(name='EXIT1')
-    d2 = DisposeHospital(name='EXIT2')
+    reception =(
+        ProcessHospital(max_queue=100, n_channel=2, name='RECEPTION', distribution='exp'))
+    following_to_ward =(
+        ProcessHospital(max_queue=100, delay_mean=3.0, delay_dev=8, n_channel=3, name='FOLLOWING_TO_THE_WARD', distribution='unif'))
+    following_to_lab_reception =(
+        ProcessHospital(max_queue=0, delay_mean=2.0, delay_dev=5, n_channel=10, name='FOLLOWING_TO_THE_LAB_RECEPTION', distribution='unif'))
+    lab_registry =(
+        ProcessHospital(max_queue=100, delay_mean=4.5, delay_dev=3, n_channel=1, name='LAB_REGISTRY', distribution='erlang'))
+    examination =(
+        ProcessHospital(max_queue=100, delay_mean=4.0, delay_dev=2, n_channel=2, name='EXAMINATION', distribution='erlang'))
+    following_to_reception =(
+        ProcessHospital(max_queue=0, delay_mean=2.0, delay_dev=5, n_channel=10, name='FOLLOWING_TO_THE_RECEPTION', distribution='unif'))
 
-    c1.next_element = [p1]
-    p1.next_element = [p2, p3]
-    p2.next_element = [d1]
-    p3.next_element = [p4]
-    p4.next_element = [p5]
-    p5.next_element = [d2, p6]
-    p6.next_element = [p1]
+    exit1 = DisposeHospital(name='EXIT1')
+    exit2 = DisposeHospital(name='EXIT2')
 
-    p1.prior_types = [1]
+    c1.next_element = [reception]
+    reception.next_element = [following_to_ward, following_to_lab_reception]
+    following_to_ward.next_element = [exit1]
+    following_to_lab_reception.next_element = [lab_registry]
+    lab_registry.next_element = [examination]
+    examination.next_element = [exit2, following_to_reception]
+    following_to_reception.next_element = [reception]
 
-    p1.required_path = [[1], [2, 3]]
-    p5.required_path = [[3], [2]]
+    reception.prior_types = [1]
 
-    elements = [c1, p1, p2, p3, p4, p5, p6, d1, d2]
+    reception.required_path = [[1], [2, 3]]
+    examination.required_path = [[3], [2]]
+
+    elements = [c1, reception, following_to_ward, following_to_lab_reception, lab_registry, examination, following_to_reception, exit1, exit2]
 
     model = ModelHospital(elements)
     model.simulate(1000)
@@ -139,9 +141,9 @@ def main():
     # input(continue_test)
     # priority_model()
     # input(continue_test)
-    # bank_model()
+    bank_model()
     # input(continue_test)
-    hospital_model()
+    # hospital_model()
 
 
 if __name__ == "__main__":
